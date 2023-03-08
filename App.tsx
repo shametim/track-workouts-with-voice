@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Audio } from 'expo-av';
+import React, { useState, useEffect } from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Audio } from "expo-av";
 
 export default function App() {
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
-
   async function startRecording() {
     try {
       await Audio.requestPermissionsAsync();
       await Audio.setAudioModeAsync({
+        
         allowsRecordingIOS: true,
         playsInSilentModeIOS: true,
       });
@@ -17,7 +17,7 @@ export default function App() {
       await newRecording.startAsync();
       setRecording(newRecording);
     } catch (error) {
-      console.log('Failed to start recording', error);
+      console.log("Failed to start recording", error);
     }
   }
 
@@ -29,22 +29,22 @@ export default function App() {
       await recording.stopAndUnloadAsync();
       const uri = JSON.stringify(recording.getURI());
 
-      const response = await fetch('https://example.com/api/recordings', {
-        method: 'POST',
+      const response = await fetch("https://example.com/api/recordings", {
+        method: "POST",
         body: uri,
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       });
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const data = await response.json();
-      console.log('Recording uploaded', data);
+      console.log("Recording uploaded", data);
     } catch (error) {
-      console.log('Failed to stop recording', error);
+      console.log("Failed to stop recording", error);
     } finally {
       setRecording(null);
     }
@@ -66,8 +66,13 @@ export default function App() {
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity style={styles.button} onPress={recording ? stopRecording : startRecording}>
-        <Text style={styles.buttonText}>{recording ? 'Stop Recording' : 'Start Recording'}</Text>
+      <TouchableOpacity
+        style={styles.button}
+        onPress={recording ? stopRecording : startRecording}
+      >
+        <Text style={styles.buttonText}>
+          {recording ? "Stop Recording" : "Start Recording"}
+        </Text>
       </TouchableOpacity>
     </View>
   );
@@ -76,19 +81,18 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#fff',
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#fff",
   },
   button: {
-    backgroundColor: '#00aaff',
+    backgroundColor: "#00aaff",
     padding: 20,
     borderRadius: 10,
   },
   buttonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
 });
-
