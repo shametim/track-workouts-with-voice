@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   View,
   Animated,
+  FlatList,
 } from "react-native";
 import { Audio } from "expo-av";
 import * as Linking from "expo-linking";
@@ -20,7 +21,7 @@ export default function App() {
   // https://twitter.com/DavidKPiano/status/1604870393084665856/photo/2
   const [recording, setRecording] = useState<Audio.Recording>();
   const [permission, setPermission] = useState<Audio.PermissionResponse>();
-  const [transcription, setTranscription] = useState("");
+  const [exercises, setExercises] = useState([]);
   const [appIsReady, setAppIsReady] = useState(false);
   const [splashAnimation] = useState(new Animated.Value(1));
 
@@ -57,6 +58,7 @@ export default function App() {
   }, [appIsReady]);
 
   async function startRecording() {
+    setExercises([])
     // Ask or get permission from the user to use their device's microphone
     // to record the user's voice
     const permission = await Audio.requestPermissionsAsync();
@@ -93,7 +95,7 @@ export default function App() {
     const uri = recording.getURI();
     if (typeof uri === "string") {
       setRecording(undefined);
-      await transcribeAudio(uri);
+      await transcribeAudio("assets/Recording.m4a");
     }
   }
 
@@ -125,7 +127,7 @@ export default function App() {
 
       const data = await response.json();
 
-      setTranscription(data.text);
+      setExercises(data.exercises);
     } catch (e) {
       console.log(e);
     }
@@ -135,6 +137,23 @@ export default function App() {
     return null;
   }
 
+  interface Set {
+    weight: number;
+    unit: string;
+    reps: number;
+  }
+
+  const renderItem = ({ item }: { item: { name: string; sets: Set[] } }) => (
+    <View style={styles.exerciseContainer}>
+      <Text style={styles.exerciseName}>{item.name}</Text>
+      {item.sets.map((set, index) => (
+        <Text key={index} style={styles.setInfo}>
+          Set {index + 1}: {set.weight} {set.unit}, {set.reps} reps
+        </Text>
+      ))}
+    </View>
+  );
+
   return (
     <View onLayout={onLayoutRootView} style={styles.container}>
       <TouchableOpacity onPress={recording ? stopRecording : startRecording}>
@@ -143,7 +162,13 @@ export default function App() {
         </Text>
       </TouchableOpacity>
 
-      <Text>{transcription}</Text>
+      <View style={styles.container}>
+        <FlatList
+          data={exercises}
+          renderItem={renderItem}
+          keyExtractor={(_, index) => index.toString()}
+        />
+      </View>
 
       {permission?.status === Audio.PermissionStatus.DENIED && (
         <Text>You previously denied mic permission</Text>
@@ -162,5 +187,17 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
+  },
+  exerciseContainer: {
+    marginBottom: 20,
+  },
+  exerciseName: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 10,
+  },
+  setInfo: {
+    fontSize: 14,
+    marginBottom: 5,
   },
 });
