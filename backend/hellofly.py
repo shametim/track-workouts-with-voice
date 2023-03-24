@@ -9,11 +9,11 @@ app = Flask(__name__)
 subscription_key = os.environ.get('SPEECH_KEY')
 region = os.environ.get('SPEECH_REGION')
 # Create a SpeechConfig instance with your subscription key and region
-speech_config = speechsdk.SpeechConfig(
-    subscription=subscription_key, region=region)
+# speech_config = speechsdk.SpeechConfig(
+#     subscription=subscription_key, region=region)
 
-# Create a SpeechSynthesizer instance with the speech_config
-speech_synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config)
+# # Create a SpeechSynthesizer instance with the speech_config
+# speech_synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config)
 
 # pinecone.init(
 #     api_key=os.environ.get('PINECONE_API_KEY'),  # find at app.pinecone.io
@@ -80,10 +80,5 @@ def transcribe():
         print("Text-to-Speech synthesis was successful.")
     else:
         print(f"Text-to-Speech synthesis failed: {result.error_details}")
-
-        # Save the audio to a file
-    with open("assets/output.wav", "wb") as audio_file:
-        audio_file.write(result.audio_data)
-        print("Audio file saved as output.wav")
 
     return completion.choices[0].message.content

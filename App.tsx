@@ -14,6 +14,7 @@ import { Platform } from "react-native";
 import "@expo/metro-runtime";
 import * as Font from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
+import "expo-dev-client";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -58,7 +59,7 @@ export default function App() {
   }, [appIsReady]);
 
   async function startRecording() {
-    setExercises([])
+    setExercises([]);
     // Ask or get permission from the user to use their device's microphone
     // to record the user's voice
     const permission = await Audio.requestPermissionsAsync();
@@ -95,7 +96,8 @@ export default function App() {
     const uri = recording.getURI();
     if (typeof uri === "string") {
       setRecording(undefined);
-      await transcribeAudio("assets/Recording.m4a");
+      // await transcribeAudio("assets/Recording.m4a");
+      await transcribeAudio(uri);
     }
   }
 
@@ -160,15 +162,13 @@ export default function App() {
         <Text style={{ fontFamily: "Dinish-Regular", fontSize: 16 }}>
           {recording ? "Stop Recording" : "Start Recording"}
         </Text>
-      </TouchableOpacity>
 
-      <View style={styles.container}>
         <FlatList
           data={exercises}
           renderItem={renderItem}
           keyExtractor={(_, index) => index.toString()}
         />
-      </View>
+      </TouchableOpacity>
 
       {permission?.status === Audio.PermissionStatus.DENIED && (
         <Text>You previously denied mic permission</Text>
@@ -184,20 +184,17 @@ export default function App() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
+    // marginTop: 200,
   },
   exerciseContainer: {
     marginBottom: 20,
   },
   exerciseName: {
-    fontSize: 18,
-    fontWeight: "bold",
+    fontSize: 14,
     marginBottom: 10,
   },
   setInfo: {
-    fontSize: 14,
+    fontSize: 12,
     marginBottom: 5,
   },
 });
