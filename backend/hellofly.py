@@ -2,18 +2,25 @@ from flask import Flask, request
 from pydub import silence
 import openai
 import os
-import azure.cognitiveservices.speech as speechsdk
 
 app = Flask(__name__)
 
-subscription_key = os.environ.get('SPEECH_KEY')
-region = os.environ.get('SPEECH_REGION')
-# Create a SpeechConfig instance with your subscription key and region
+
+# speech synthesis
+# import azure.cognitiveservices.speech as speechsdk
+# subscription_key = os.environ.get('SPEECH_KEY')
+# region = os.environ.get('SPEECH_REGION')
 # speech_config = speechsdk.SpeechConfig(
 #     subscription=subscription_key, region=region)
-
-# # Create a SpeechSynthesizer instance with the speech_config
 # speech_synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config)
+# result = speech_synthesizer.speak_text_async("Got it!").get()
+
+# # Check if the synthesis was successful
+# if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
+#     print("Text-to-Speech synthesis was successful.")
+# else:
+#     print(f"Text-to-Speech synthesis failed: {result.error_details}")
+
 
 # pinecone.init(
 #     api_key=os.environ.get('PINECONE_API_KEY'),  # find at app.pinecone.io
@@ -71,14 +78,5 @@ def transcribe():
                 structure + "workout: " + transcript.text}
         ]
     )
-
-    text = transcript.text
-    result = speech_synthesizer.speak_text_async(text).get()
-
-    # Check if the synthesis was successful
-    if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
-        print("Text-to-Speech synthesis was successful.")
-    else:
-        print(f"Text-to-Speech synthesis failed: {result.error_details}")
 
     return completion.choices[0].message.content

@@ -15,6 +15,9 @@ import "@expo/metro-runtime";
 import * as Font from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import "expo-dev-client";
+import Timer from "./Timer";
+import FileSize from "./FileSize";
+import { IOSAudioQuality } from "expo-av/build/Audio/RecordingConstants";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -23,8 +26,11 @@ export default function App() {
   const [recording, setRecording] = useState<Audio.Recording>();
   const [permission, setPermission] = useState<Audio.PermissionResponse>();
   const [exercises, setExercises] = useState([]);
+  const [isTimerActive, setIsTimerActive] = useState<boolean>(false);
+  const [recordingSize, setRecordingSize] = useState(0);
   const [appIsReady, setAppIsReady] = useState(false);
   const [splashAnimation] = useState(new Animated.Value(1));
+  const [recordingUri, setRecordingUri] = useState<string>();
 
   const openSettings = useCallback(async () => {
     // Open the custom settings if the app has one
@@ -69,15 +75,30 @@ export default function App() {
     // i.e. 'You previously denied permission. Please check your settings.'
     setPermission(permission);
 
+    setIsTimerActive(true);
     await Audio.setAudioModeAsync({
       allowsRecordingIOS: true,
       playsInSilentModeIOS: true,
       staysActiveInBackground: true,
     });
 
-    const { recording } = await Audio.Recording.createAsync(
-      Audio.RecordingOptionsPresets.HIGH_QUALITY
-    );
+    const { recording } = await Audio.Recording.createAsync({
+      ...Audio.RecordingOptionsPresets.HIGH_QUALITY,
+      ios: {
+        ...Audio.RecordingOptionsPresets.HIGH_QUALITY.ios,
+        audioQuality: IOSAudioQuality.LOW,
+        bitRate: 8000,
+        sampleRate: 8000,
+        numberOfChannels: 1,
+      },
+      android: {
+        ...Audio.RecordingOptionsPresets.HIGH_QUALITY.android,
+        bitRate: 8000,
+        sampleRate: 8000,
+        numberOfChannels: 1,
+      },
+      web: { bitsPerSecond: 6000, mimeType: "audio/webm" },
+    });
 
     setRecording(recording);
   }
@@ -93,9 +114,14 @@ export default function App() {
       allowsRecordingIOS: false,
     });
 
+    setIsTimerActive(false);
+
     const uri = recording.getURI();
     if (typeof uri === "string") {
+      setRecordingUri(uri);
       setRecording(undefined);
+
+      // this is for testing locally
       // await transcribeAudio("assets/Recording.m4a");
       await transcribeAudio(uri);
     }
@@ -114,7 +140,7 @@ export default function App() {
     } else if (Platform.OS === "web") {
       const audioResponse = await fetch(audioUri);
       const audioEncodedBytes = await audioResponse.blob();
-
+      setRecordingSize(audioEncodedBytes.size);
       formData.append("recording.webm", audioEncodedBytes, "recording.webm");
     }
 
@@ -159,16 +185,26 @@ export default function App() {
   return (
     <View onLayout={onLayoutRootView} style={styles.container}>
       <TouchableOpacity onPress={recording ? stopRecording : startRecording}>
-        <Text style={{ fontFamily: "Dinish-Regular", fontSize: 16 }}>
+        <Text style={{ fontFamily: "Dinish-Regular", fontSize: 64 }}>
           {recording ? "Stop Recording" : "Start Recording"}
         </Text>
-
-        <FlatList
-          data={exercises}
-          renderItem={renderItem}
-          keyExtractor={(_, index) => index.toString()}
-        />
       </TouchableOpacity>
+
+      {Platform.OS === "ios" || Platform.OS === "android" ? (
+        <FileSize fileUri={recordingUri} />
+      ) : undefined}
+
+      {Platform.OS === "web" ? (
+        <Text style={{ fontSize: 32 }}>{recordingSize / 1024} KB</Text>
+      ) : undefined}
+
+      <Timer isActive={isTimerActive}></Timer>
+
+      <FlatList
+        data={exercises}
+        renderItem={renderItem}
+        keyExtractor={(_, index) => index.toString()}
+      />
 
       {permission?.status === Audio.PermissionStatus.DENIED && (
         <Text>You previously denied mic permission</Text>
@@ -190,11 +226,11 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   exerciseName: {
-    fontSize: 14,
+    fontSize: 36,
     marginBottom: 10,
   },
   setInfo: {
-    fontSize: 12,
+    fontSize: 32,
     marginBottom: 5,
   },
 });
