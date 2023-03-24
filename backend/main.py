@@ -40,8 +40,8 @@ def transcribe():
         audio_file = None
 
     # silence optimization
-    # print('nonsilent', silence.detect_nonsilent(audio_file))
-    # print('speech', silence.split_on_silence(audio_file))
+    print('nonsilent', silence.detect_nonsilent(audio_file))
+    print('speech', silence.split_on_silence(audio_file))
     transcript = openai.Audio.transcribe("whisper-1", file=audio_file)
 
     # this needs a lot of tweaking and testing and evaluating

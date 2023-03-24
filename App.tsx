@@ -15,22 +15,42 @@ import "@expo/metro-runtime";
 import * as Font from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import "expo-dev-client";
-import Timer from "./Timer";
-import FileSize from "./FileSize";
-import { IOSAudioQuality } from "expo-av/build/Audio/RecordingConstants";
 
 SplashScreen.preventAutoHideAsync();
+let didInit = false;
 
+const AUDIO_CONFIGURATION = {
+  ...Audio.RecordingOptionsPresets.HIGH_QUALITY,
+  ios: {
+    ...Audio.RecordingOptionsPresets.HIGH_QUALITY.ios,
+    audioQuality: Audio.IOSAudioQuality.LOW,
+    bitRate: 8000,
+    sampleRate: 8000,
+    numberOfChannels: 1,
+  },
+  android: {
+    ...Audio.RecordingOptionsPresets.HIGH_QUALITY.android,
+    bitRate: 8000,
+    sampleRate: 8000,
+    numberOfChannels: 1,
+  },
+  web: { bitsPerSecond: 6000, mimeType: "audio/webm" },
+};
+
+interface Set {
+  weight: number;
+  unit: string;
+  reps: number;
+}
 export default function App() {
   // https://twitter.com/DavidKPiano/status/1604870393084665856/photo/2
   const [recording, setRecording] = useState<Audio.Recording>();
+  const [isRecording, setIsRecording] = useState<boolean>(false);
+
   const [permission, setPermission] = useState<Audio.PermissionResponse>();
   const [exercises, setExercises] = useState([]);
-  const [isTimerActive, setIsTimerActive] = useState<boolean>(false);
-  const [recordingSize, setRecordingSize] = useState(0);
   const [appIsReady, setAppIsReady] = useState(false);
   const [splashAnimation] = useState(new Animated.Value(1));
-  const [recordingUri, setRecordingUri] = useState<string>();
 
   const openSettings = useCallback(async () => {
     // Open the custom settings if the app has one
@@ -43,14 +63,23 @@ export default function App() {
         await Font.loadAsync({
           "Dinish-Regular": require("./assets/fonts/Dinish-Regular.ttf"),
         });
-        // Add any other resources you want to load here
+
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: true,
+          playsInSilentModeIOS: true,
+          staysActiveInBackground: true,
+        });
       } catch (e) {
         console.warn(e);
       } finally {
         setAppIsReady(true);
       }
     }
-    prepare();
+
+    if (!didInit) {
+      didInit = true;
+      prepare();
+    }
   }, []);
 
   const onLayoutRootView = useCallback(async () => {
@@ -65,48 +94,31 @@ export default function App() {
   }, [appIsReady]);
 
   async function startRecording() {
-    setExercises([]);
-    // Ask or get permission from the user to use their device's microphone
-    // to record the user's voice
-    const permission = await Audio.requestPermissionsAsync();
+    setPermission(await Audio.requestPermissionsAsync());
 
-    // Store the permission in device memory so we (the app) can inform the user
-    // on their set permission.
-    // i.e. 'You previously denied permission. Please check your settings.'
-    setPermission(permission);
-
-    setIsTimerActive(true);
-    await Audio.setAudioModeAsync({
-      allowsRecordingIOS: true,
-      playsInSilentModeIOS: true,
-      staysActiveInBackground: true,
-    });
-
-    const { recording } = await Audio.Recording.createAsync({
-      ...Audio.RecordingOptionsPresets.HIGH_QUALITY,
-      ios: {
-        ...Audio.RecordingOptionsPresets.HIGH_QUALITY.ios,
-        audioQuality: IOSAudioQuality.LOW,
-        bitRate: 8000,
-        sampleRate: 8000,
-        numberOfChannels: 1,
-      },
-      android: {
-        ...Audio.RecordingOptionsPresets.HIGH_QUALITY.android,
-        bitRate: 8000,
-        sampleRate: 8000,
-        numberOfChannels: 1,
-      },
-      web: { bitsPerSecond: 6000, mimeType: "audio/webm" },
-    });
-
-    setRecording(recording);
+    recordingLoop();
   }
 
-  async function stopRecording() {
-    if (!recording) {
-      return;
+  async function recordingLoop(previousRecording?: Audio.Recording) {
+    if (previousRecording) {
+      await previousRecording.stopAndUnloadAsync();
+      pushRecording(previousRecording);
+
+      if (!isRecording) {
+        return;
+      }
     }
+
+    const { recording } = await Audio.Recording.createAsync(
+      AUDIO_CONFIGURATION
+    );
+    setRecording(recording);
+    await new Promise((resolve) => setTimeout(resolve, 30000));
+    await recordingLoop(recording);
+  }
+
+  async function stopRecording(recording: Audio.Recording) {
+    setIsRecording(false);
 
     await recording.stopAndUnloadAsync();
 
@@ -114,61 +126,46 @@ export default function App() {
       allowsRecordingIOS: false,
     });
 
-    setIsTimerActive(false);
+    setRecording(undefined);
+  }
 
+  async function pushRecording(recording: Audio.Recording) {
     const uri = recording.getURI();
+    // const uri = "assets/Recording.m4a" // test with premade recording
     if (typeof uri === "string") {
-      setRecordingUri(uri);
       setRecording(undefined);
 
-      // this is for testing locally
-      // await transcribeAudio("assets/Recording.m4a");
-      await transcribeAudio(uri);
+      const formData = new FormData();
+
+      // This code will break if you touch it
+      if (Platform.OS === "ios" || Platform.OS === "android") {
+        formData.append("recording.m4a", {
+          uri: uri,
+          type: "audio/m4a",
+          name: "recording.m4a",
+        } as any);
+      } else if (Platform.OS === "web") {
+        const audioResponse = await fetch(uri);
+        const audioEncodedBytes = await audioResponse.blob();
+        formData.append("recording.webm", audioEncodedBytes, "recording.webm");
+      }
+
+      try {
+        const response = await fetch(
+          "https://twyv.martinshameti.com/transcribe",
+          {
+            method: "POST",
+            body: formData,
+          }
+        );
+
+        const data = await response.json();
+
+        setExercises(data.exercises);
+      } catch (e) {
+        console.log(e);
+      }
     }
-  }
-
-  const transcribeAudio = async (audioUri: string) => {
-    const formData = new FormData();
-
-    // This code will break if you touch it
-    if (Platform.OS === "ios" || Platform.OS === "android") {
-      formData.append("recording.m4a", {
-        uri: audioUri,
-        type: "audio/m4a",
-        name: "recording.m4a",
-      } as any);
-    } else if (Platform.OS === "web") {
-      const audioResponse = await fetch(audioUri);
-      const audioEncodedBytes = await audioResponse.blob();
-      setRecordingSize(audioEncodedBytes.size);
-      formData.append("recording.webm", audioEncodedBytes, "recording.webm");
-    }
-
-    try {
-      const response = await fetch(
-        "https://twyv.martinshameti.com/transcribe",
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
-
-      const data = await response.json();
-
-      setExercises(data.exercises);
-    } catch (e) {
-      console.log(e);
-    }
-  };
-
-  if (!appIsReady) {
-    return null;
-  }
-
-  interface Set {
-    weight: number;
-    unit: string;
-    reps: number;
   }
 
   const renderItem = ({ item }: { item: { name: string; sets: Set[] } }) => (
@@ -182,23 +179,18 @@ export default function App() {
     </View>
   );
 
+  if (!appIsReady) {
+    return null;
+  }
   return (
     <View onLayout={onLayoutRootView} style={styles.container}>
-      <TouchableOpacity onPress={recording ? stopRecording : startRecording}>
+      <TouchableOpacity
+        onPress={recording ? () => stopRecording(recording) : startRecording}
+      >
         <Text style={{ fontFamily: "Dinish-Regular", fontSize: 64 }}>
           {recording ? "Stop Recording" : "Start Recording"}
         </Text>
       </TouchableOpacity>
-
-      {Platform.OS === "ios" || Platform.OS === "android" ? (
-        <FileSize fileUri={recordingUri} />
-      ) : undefined}
-
-      {Platform.OS === "web" ? (
-        <Text style={{ fontSize: 32 }}>{recordingSize / 1024} KB</Text>
-      ) : undefined}
-
-      <Timer isActive={isTimerActive}></Timer>
 
       <FlatList
         data={exercises}
@@ -219,9 +211,7 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    // marginTop: 200,
-  },
+  container: {},
   exerciseContainer: {
     marginBottom: 20,
   },
