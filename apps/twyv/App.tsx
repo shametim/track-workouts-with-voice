@@ -126,6 +126,8 @@ export default function App() {
       allowsRecordingIOS: false,
     });
 
+    pushRecording(recording);
+
     setRecording(undefined);
   }
 
@@ -151,13 +153,10 @@ export default function App() {
       }
 
       try {
-        const response = await fetch(
-          "https://twyv.martinshameti.com/transcribe",
-          {
-            method: "POST",
-            body: formData,
-          }
-        );
+        const response = await fetch("http://localhost:5000/transcribe", {
+          method: "POST",
+          body: formData,
+        });
 
         const data = await response.json();
 

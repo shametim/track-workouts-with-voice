@@ -1,0 +1,22 @@
+{
+  "name": "transcribe-api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "dev": "tsc && concurrently --kill-others \"tsc --watch\" \"nodemon --inspect dist/server.js\""
+  },
+  "author": "Martin Shameti",
+  "license": "ISC",
+  "dependencies": {
+    "@fastify/multipart": "^7.6.0",
+    "fastify": "^4.15.0",
+    "formidable": "v3",
+    "openai": "^3.2.1",
+    "undici": "^5.21.2"
+  },
+  "devDependencies": {
+    "concurrently": "8.0.1",
+    "nodemon": "2.0.22"
+  }
+}

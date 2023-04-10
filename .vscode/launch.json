@@ -1,0 +1,16 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Attach",
+        "port": 9229,
+        "request": "attach",
+        "skipFiles": [
+          "<node_internals>/**"
+        ],
+        "outFiles": ["${workspaceFolder}/apps/transcribe-api/dist/**/*.js"],
+        "restart": true,
+        "type": "node"
+      }
+    ],
+}
