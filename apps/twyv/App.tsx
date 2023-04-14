@@ -3,7 +3,6 @@ import {
   StyleSheet,
   Button,
   Text,
-  TouchableOpacity,
   View,
   Animated,
   FlatList,
@@ -14,27 +13,30 @@ import { Platform } from "react-native";
 import "@expo/metro-runtime";
 import * as Font from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
+import { useRecorder } from "web-recorder";
+
 import "expo-dev-client";
 
 SplashScreen.preventAutoHideAsync();
 let didInit = false;
 
-const AUDIO_CONFIGURATION = {
+const AUDIO_CONFIGURATION: Audio.RecordingOptions = {
   ...Audio.RecordingOptionsPresets.HIGH_QUALITY,
   ios: {
     ...Audio.RecordingOptionsPresets.HIGH_QUALITY.ios,
     audioQuality: Audio.IOSAudioQuality.LOW,
-    bitRate: 8000,
-    sampleRate: 8000,
+    bitRate: 16000,
+    sampleRate: 16000,
     numberOfChannels: 1,
   },
   android: {
     ...Audio.RecordingOptionsPresets.HIGH_QUALITY.android,
-    bitRate: 8000,
-    sampleRate: 8000,
+    bitRate: 16000,
+    sampleRate: 16000,
     numberOfChannels: 1,
   },
   web: { bitsPerSecond: 6000, mimeType: "audio/webm" },
+  isMeteringEnabled: true,
 };
 
 interface Set {
@@ -44,18 +46,19 @@ interface Set {
 }
 export default function App() {
   // https://twitter.com/DavidKPiano/status/1604870393084665856/photo/2
-  const [recording, setRecording] = useState<Audio.Recording>();
   const [isRecording, setIsRecording] = useState<boolean>(false);
 
   const [permission, setPermission] = useState<Audio.PermissionResponse>();
   const [exercises, setExercises] = useState([]);
   const [appIsReady, setAppIsReady] = useState(false);
   const [splashAnimation] = useState(new Animated.Value(1));
+  const [transcription, setTranscription] = useState(undefined);
 
-  const openSettings = useCallback(async () => {
-    // Open the custom settings if the app has one
-    await Linking.openSettings();
-  }, []);
+  const start = useRecorder({
+    onReceiveAudioUrl: (url) => {
+      fetch(url).then((e) => e);
+    },
+  });
 
   useEffect(() => {
     async function prepare() {
@@ -64,11 +67,15 @@ export default function App() {
           "Dinish-Regular": require("./assets/fonts/Dinish-Regular.ttf"),
         });
 
-        await Audio.setAudioModeAsync({
-          allowsRecordingIOS: true,
-          playsInSilentModeIOS: true,
-          staysActiveInBackground: true,
-        });
+        // await Audio.setAudioModeAsync({
+        //   allowsRecordingIOS: true,
+        //   playsInSilentModeIOS: true,
+        //   staysActiveInBackground: true,
+        // });
+
+        // setPermission(await Audio.requestPermissionsAsync());
+
+        // startRecording();
       } catch (e) {
         console.warn(e);
       } finally {
@@ -93,73 +100,62 @@ export default function App() {
     }
   }, [appIsReady]);
 
-  async function startRecording() {
-    setPermission(await Audio.requestPermissionsAsync());
-
-    recordingLoop();
-  }
-
-  async function recordingLoop(previousRecording?: Audio.Recording) {
-    if (previousRecording) {
-      await previousRecording.stopAndUnloadAsync();
-      pushRecording(previousRecording);
+  async function startRecording(previous?: Audio.Recording) {
+    if (previous) {
+      await previous.stopAndUnloadAsync();
+      uploadRecording(previous);
 
       if (!isRecording) {
         return;
       }
     }
 
-    const { recording } = await Audio.Recording.createAsync(
-      AUDIO_CONFIGURATION
+    const { recording, status } = await Audio.Recording.createAsync(
+      AUDIO_CONFIGURATION,
+      (status) => {
+        const loudness = status.metering;
+      },
+      500
     );
-    setRecording(recording);
-    await new Promise((resolve) => setTimeout(resolve, 30000));
-    await recordingLoop(recording);
+
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+
+    await startRecording(recording);
   }
 
-  async function stopRecording(recording: Audio.Recording) {
-    setIsRecording(false);
-
-    await recording.stopAndUnloadAsync();
-
-    await Audio.setAudioModeAsync({
-      allowsRecordingIOS: false,
-    });
-
-    pushRecording(recording);
-
-    setRecording(undefined);
-  }
-
-  async function pushRecording(recording: Audio.Recording) {
+  async function uploadRecording(recording: Audio.Recording) {
     const uri = recording.getURI();
     // const uri = "assets/Recording.m4a" // test with premade recording
     if (typeof uri === "string") {
-      setRecording(undefined);
-
       const formData = new FormData();
 
-      // This code will break if you touch it
       if (Platform.OS === "ios" || Platform.OS === "android") {
-        formData.append("recording.m4a", {
+        formData.append("file", {
           uri: uri,
           type: "audio/m4a",
           name: "recording.m4a",
         } as any);
+        formData.append("model", "whisper-1");
       } else if (Platform.OS === "web") {
         const audioResponse = await fetch(uri);
         const audioEncodedBytes = await audioResponse.blob();
-        formData.append("recording.webm", audioEncodedBytes, "recording.webm");
+        formData.append("file", audioEncodedBytes, "recording.webm");
+        formData.append("model", "whisper-1");
       }
 
       try {
-        const response = await fetch("http://localhost:5000/transcribe", {
+        const url =
+          Platform.OS === "web"
+            ? "http://localhost:5000/transcribe"
+            : "https://twyv.martinshameti.com/proxy";
+
+        const response = await fetch(url, {
           method: "POST",
           body: formData,
         });
 
         const data = await response.json();
-
+        setTranscription(data.text);
         setExercises(data.exercises);
       } catch (e) {
         console.log(e);
@@ -181,15 +177,14 @@ export default function App() {
   if (!appIsReady) {
     return null;
   }
+
   return (
     <View onLayout={onLayoutRootView} style={styles.container}>
-      <TouchableOpacity
-        onPress={recording ? () => stopRecording(recording) : startRecording}
+      <Text
+        style={{ fontFamily: "Dinish-Regular", fontSize: 24, color: "white" }}
       >
-        <Text style={{ fontFamily: "Dinish-Regular", fontSize: 64 }}>
-          {recording ? "Stop Recording" : "Start Recording"}
-        </Text>
-      </TouchableOpacity>
+        {transcription}
+      </Text>
 
       <FlatList
         data={exercises}
@@ -197,20 +192,25 @@ export default function App() {
         keyExtractor={(_, index) => index.toString()}
       />
 
+      <Button title="Record" onPress={start}></Button>
+
       {permission?.status === Audio.PermissionStatus.DENIED && (
         <Text>You previously denied mic permission</Text>
       )}
 
       {(Platform.OS === "ios" || Platform.OS === "android") &&
         permission?.status === Audio.PermissionStatus.DENIED && (
-          <Button title="Open Settings" onPress={openSettings} />
+          <Button title="Open Settings" onPress={Linking.openSettings} />
         )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {},
+  container: {
+    backgroundColor: "#000000",
+    width: "100%",
+  },
   exerciseContainer: {
     marginBottom: 20,
   },

@@ -13,22 +13,22 @@ importers:
 
   apps/transcribe-api:
     dependencies:
-      '@fastify/multipart':
-        specifier: ^7.6.0
-        version: 7.6.0
+      '@fastify/reply-from':
+        specifier: ^9.0.1
+        version: 9.0.1
       fastify:
         specifier: ^4.15.0
         version: 4.15.0
-      formidable:
-        specifier: v3
-        version: 3.2.5
-      openai:
-        specifier: ^3.2.1
-        version: 3.2.1
+      onnxruntime-node:
+        specifier: ^1.14.0
+        version: 1.14.0
       undici:
         specifier: ^5.21.2
         version: 5.21.2
     devDependencies:
+      '@types/node':
+        specifier: ^18.15.11
+        version: 18.15.11
       concurrently:
         specifier: 8.0.1
         version: 8.0.1
@@ -80,6 +80,9 @@ importers:
       react-native-web:
         specifier: ~0.18.10
         version: 0.18.10(react-dom@18.2.0)(react@18.2.0)
+      web-recorder:
+        specifier: workspace:*
+        version: link:../../packages/web-recorder
     devDependencies:
       '@babel/core':
         specifier: ^7.20.0
@@ -90,6 +93,22 @@ importers:
       ts-node:
         specifier: ^10.9.1
         version: 10.9.1(@types/node@18.15.11)(typescript@4.9.5)
+      typescript:
+        specifier: ^4.9.5
+        version: 4.9.5
+
+  packages/web-recorder:
+    dependencies:
+      react:
+        specifier: 0.0.0-experimental-7b0642bb9-20230412
+        version: 0.0.0-experimental-7b0642bb9-20230412
+      react-dom:
+        specifier: 0.0.0-experimental-7b0642bb9-20230412
+        version: 0.0.0-experimental-7b0642bb9-20230412(react@0.0.0-experimental-7b0642bb9-20230412)
+    devDependencies:
+      assemblyscript:
+        specifier: ^0.27.2
+        version: 0.27.2
       typescript:
         specifier: ^4.9.5
         version: 4.9.5
@@ -1797,13 +1816,6 @@ packages:
       fast-uri: 2.2.0
     dev: false
 
-  /@fastify/busboy@1.2.1:
-    resolution: {integrity: sha512-7PQA7EH43S0CxcOa9OeAnaeA0oQ+e/DHNPZwSQM9CQHW76jle5+OvLdibRp/Aafs9KXbLhxyjOTkRjWUbQEd3Q==}
-    engines: {node: '>=14'}
-    dependencies:
-      text-decoding: 1.0.0
-    dev: false
-
   /@fastify/deepmerge@1.3.0:
     resolution: {integrity: sha512-J8TOSBq3SoZbDhM9+R/u77hP93gz/rajSA+K2kGyijPpORPWUXHUpTaleoj+92As0S9uPRP7Oi8IqMf0u+ro6A==}
     dev: false
@@ -1818,17 +1830,16 @@ packages:
       fast-json-stringify: 5.7.0
     dev: false
 
-  /@fastify/multipart@7.6.0:
-    resolution: {integrity: sha512-mQoz0SMxk1WAYLYvQypoj3GYhCbmhnFl2LdleTzKQ4HgPfhVcMT014uln2wgzRh2y+gL74b/+j0mMVgvOKpqpQ==}
+  /@fastify/reply-from@9.0.1:
+    resolution: {integrity: sha512-q9vFNUiXZTY1x8omDPe59os2MYq+3y7KgO/kZoXpZlnud+45Nd8Ot/svEvrUATzjkizIggfS4K8LR9zXDyZZKg==}
     dependencies:
-      '@fastify/busboy': 1.2.1
-      '@fastify/deepmerge': 1.3.0
       '@fastify/error': 3.2.0
       end-of-stream: 1.4.4
+      fast-querystring: 1.1.1
       fastify-plugin: 4.5.0
-      hexoid: 1.0.0
-      secure-json-parse: 2.7.0
-      stream-wormhole: 1.1.0
+      pump: 3.0.0
+      tiny-lru: 10.4.1
+      undici: 5.21.2
     dev: false
 
   /@gar/promisify@1.1.3:
@@ -2535,6 +2546,15 @@ packages:
     resolution: {integrity: sha512-BSHWgDSAiKs50o2Re8ppvp3seVHXSRM44cdSsT9FfNEUUZLOGWVCsiWaRPWM1Znn+mqZ1OfVZ3z3DWEzSp7hRA==}
     dev: false
 
+  /assemblyscript@0.27.2:
+    resolution: {integrity: sha512-uTiUFkiXkVpsY3votMjmPuA9vvL/vHuUrtH+VtVKCl+BM+1OqXFO7j53FYA4L9QtVJA9KQDYXSVnZ5LFad668w==}
+    engines: {node: '>=16', npm: '>=7'}
+    hasBin: true
+    dependencies:
+      binaryen: 112.0.0-nightly.20230411
+      long: 5.2.1
+    dev: true
+
   /assign-symbols@1.0.0:
     resolution: {integrity: sha512-Q+JC7Whu8HhmTdBph/Tq59IoRtoy6KAm5zzPv00WdujX82lbAL8K7WVjne7vdCsAmbF4AYaDOPyO3k0kl8qIrw==}
     engines: {node: '>=0.10.0'}
@@ -2588,14 +2608,6 @@ packages:
       fastq: 1.15.0
     transitivePeerDependencies:
       - supports-color
-    dev: false
-
-  /axios@0.26.1:
-    resolution: {integrity: sha512-fPwcX4EvnSHuInCMItEhAGnaSEXRBjtzh9fOtsE6E1G6p7vl7edEeZe11QHf18+6+9gR5PbKV/sGKNaD8YaMeA==}
-    dependencies:
-      follow-redirects: 1.15.2
-    transitivePeerDependencies:
-      - debug
     dev: false
 
   /babel-core@7.0.0-bridge.0(@babel/core@7.21.4):
@@ -2756,6 +2768,11 @@ packages:
   /binary-extensions@2.2.0:
     resolution: {integrity: sha512-jDctJ/IVQbZoJykoeHbhXpOlNBqGNcwXJKJog42E5HDPUwQTSdjCHdihjj0DlnheQ7blbT6dHOafNAiS8ooQKA==}
     engines: {node: '>=8'}
+    dev: true
+
+  /binaryen@112.0.0-nightly.20230411:
+    resolution: {integrity: sha512-4V9r9x9fjAVFZdR2yvBFc3BEJJIBYvd2X8X8k0zAuJsao2gl9wNHDmpQ30QsLo6hgkRfRImkCbCjhXW3RDOYXQ==}
+    hasBin: true
     dev: true
 
   /bl@4.1.0:
@@ -3491,13 +3508,6 @@ packages:
     engines: {node: '>= 0.8', npm: 1.2.8000 || >= 1.4.16}
     dev: false
 
-  /dezalgo@1.0.3:
-    resolution: {integrity: sha512-K7i4zNfT2kgQz3GylDw40ot9GAE47sFZ9EXHFSPP6zONLgH6kWXE0KWJchkbQJLBkRazq4APwZ4OwiFFlT95OQ==}
-    dependencies:
-      asap: 2.0.6
-      wrappy: 1.0.2
-    dev: false
-
   /diff@4.0.2:
     resolution: {integrity: sha512-58lmxKSA4BNyLz+HHMUzlOEpg09FV+ev6ZMe3vJihgdxzgcwZ8VoEEPmALCZG9LmqfVoNMMKpttIYTVG6uDY7A==}
     engines: {node: '>=0.3.1'}
@@ -4102,16 +4112,6 @@ packages:
     engines: {node: '>=0.4.0'}
     dev: false
 
-  /follow-redirects@1.15.2:
-    resolution: {integrity: sha512-VQLG33o04KaQ8uYi2tVNbdrWp1QWxNNea+nmIB4EVM28v0hmP17z7aG1+wAkNzVq4KeXTq3221ye5qTJP91JwA==}
-    engines: {node: '>=4.0'}
-    peerDependencies:
-      debug: '*'
-    peerDependenciesMeta:
-      debug:
-        optional: true
-    dev: false
-
   /fontfaceobserver@2.3.0:
     resolution: {integrity: sha512-6FPvD/IVyT4ZlNe7Wcn5Fb/4ChigpucKYSvD6a+0iMoLn2inpo711eyIcKjmDtE5XNcgAkSH9uN/nfAeZzHEfg==}
     dev: false
@@ -4128,23 +4128,6 @@ packages:
       asynckit: 0.4.0
       combined-stream: 1.0.8
       mime-types: 2.1.35
-    dev: false
-
-  /form-data@4.0.0:
-    resolution: {integrity: sha512-ETEklSGi5t0QMZuiXoA/Q6vcnxcLQP5vdugSpuAyi6SVGi2clPPp+xgEhuMaHC+zGgn31Kd235W35f7Hykkaww==}
-    engines: {node: '>= 6'}
-    dependencies:
-      asynckit: 0.4.0
-      combined-stream: 1.0.8
-      mime-types: 2.1.35
-    dev: false
-
-  /formidable@3.2.5:
-    resolution: {integrity: sha512-GRGDJTWAZ3H+umZbF2bKcqjsTov25zgon1St05ziKdiSw3kxvI+meMJrXx3ylRmuSADOpviSakBuS4yvGCGnSg==}
-    dependencies:
-      dezalgo: 1.0.3
-      hexoid: 1.0.0
-      once: 1.4.0
     dev: false
 
   /forwarded@0.2.0:
@@ -4398,11 +4381,6 @@ packages:
     engines: {node: '>=8'}
     dependencies:
       source-map: 0.7.4
-    dev: false
-
-  /hexoid@1.0.0:
-    resolution: {integrity: sha512-QFLV0taWQOZtvIRIAdBChesmogZrtuXvVWsFHZTk2SU+anspqZ2vMnoLg7IE1+Uk16N19APic1BuF8bC8c2m5g==}
-    engines: {node: '>=8'}
     dev: false
 
   /hosted-git-info@3.0.8:
@@ -5091,6 +5069,10 @@ packages:
       dayjs: 1.11.7
       yargs: 15.4.1
     dev: false
+
+  /long@5.2.1:
+    resolution: {integrity: sha512-GKSNGeNAtw8IryjjkhZxuKB3JzlcLTwjtiQCHKvqQet81I93kXslhDQruGI/QsddO83mcDToBVy7GqGS/zYf/A==}
+    dev: true
 
   /loose-envify@1.4.0:
     resolution: {integrity: sha512-lyuxPGr/Wfhrlem2CL/UcnUc1zcqKAImBDzukY7Y5F/yQiNdko6+fRLevlw1HgMySw7f611UIY408EtxRSoK3Q==}
@@ -6179,6 +6161,17 @@ packages:
       mimic-fn: 2.1.0
     dev: false
 
+  /onnxruntime-common@1.14.0:
+    resolution: {integrity: sha512-3LJpegM2iMNRX2wUmtYfeX/ytfOzNwAWKSq1HbRrKc9+uqG/FsEA0bbKZl1btQeZaXhC26l44NWpNUeXPII7Ew==}
+    dev: false
+
+  /onnxruntime-node@1.14.0:
+    resolution: {integrity: sha512-5ba7TWomIV/9b6NH/1x/8QEeowsb+jBEvFzU6z0T4mNsFwdPqXeFUM7uxC6QeSRkEbWu3qEB0VMjrvzN/0S9+w==}
+    os: [win32, darwin, linux]
+    dependencies:
+      onnxruntime-common: 1.14.0
+    dev: false
+
   /open@6.4.0:
     resolution: {integrity: sha512-IFenVPgF70fSm1keSd2iDBIDIBZkroLeuffXq+wKTzTJlBpesFWojV9lb8mzOfaAzM1sr7HQHuO0vtV0zYekGg==}
     engines: {node: '>=8'}
@@ -6193,15 +6186,6 @@ packages:
       define-lazy-prop: 2.0.0
       is-docker: 2.2.1
       is-wsl: 2.2.0
-    dev: false
-
-  /openai@3.2.1:
-    resolution: {integrity: sha512-762C9BNlJPbjjlWZi4WYK9iM2tAVAv0uUp1UmI34vb0CN5T2mjB/qM6RYBmNKMh/dN9fC+bxqPwWJZUTWW052A==}
-    dependencies:
-      axios: 0.26.1
-      form-data: 4.0.0
-    transitivePeerDependencies:
-      - debug
     dev: false
 
   /ora@3.4.0:
@@ -6626,6 +6610,16 @@ packages:
       - utf-8-validate
     dev: false
 
+  /react-dom@0.0.0-experimental-7b0642bb9-20230412(react@0.0.0-experimental-7b0642bb9-20230412):
+    resolution: {integrity: sha512-U6a9FOvm10R6PkN9+huJnmo08H9G9HosrmmVpmMwPkXyTKwIG/krH7vX5Ihaw0UqmEqltPSyy0t06ICFlOCsrQ==}
+    peerDependencies:
+      react: 0.0.0-experimental-7b0642bb9-20230412
+    dependencies:
+      loose-envify: 1.4.0
+      react: 0.0.0-experimental-7b0642bb9-20230412
+      scheduler: 0.0.0-experimental-7b0642bb9-20230412
+    dev: false
+
   /react-dom@18.2.0(react@18.2.0):
     resolution: {integrity: sha512-6IMTriUmvsjHUjNtEDudZfuDQUoWXVxKHhlEGSk81n4YFS+r/Kl99wXiwlVXtPBtJenozv2P+hxDsw9eA7Xo6g==}
     peerDependencies:
@@ -6747,6 +6741,13 @@ packages:
       object-assign: 4.1.1
       react: 18.2.0
       react-is: 18.2.0
+    dev: false
+
+  /react@0.0.0-experimental-7b0642bb9-20230412:
+    resolution: {integrity: sha512-GW0SrKbCZp56nrzP488MVhPyIif+P32lf/cvCWnZgFTSxUd+nQhIfSTkzlSUcM25vl60CbT48mr3A60nxbaitQ==}
+    engines: {node: '>=0.10.0'}
+    dependencies:
+      loose-envify: 1.4.0
     dev: false
 
   /react@18.2.0:
@@ -7053,6 +7054,12 @@ packages:
 
   /sax@1.2.4:
     resolution: {integrity: sha512-NqVDv9TpANUjFm0N8uM5GxL36UgKi9/atZw+x7YFnQ8ckwFGKrl4xX4yWtrey3UJm5nP1kUbnYgLopqWNSRhWw==}
+    dev: false
+
+  /scheduler@0.0.0-experimental-7b0642bb9-20230412:
+    resolution: {integrity: sha512-S5D7N7Fywcv3z2koEulkYFbo2515f5zk5Fwraj1M2FnBnwuB7i+WTIHubkuDzdI+1iK2TQf3Lv05Ow4Y7yImQQ==}
+    dependencies:
+      loose-envify: 1.4.0
     dev: false
 
   /scheduler@0.23.0:
@@ -7391,11 +7398,6 @@ packages:
     engines: {node: '>= 0.10.0'}
     dev: false
 
-  /stream-wormhole@1.1.0:
-    resolution: {integrity: sha512-gHFfL3px0Kctd6Po0M8TzEvt3De/xu6cnRrjlfYNhwbhLPLwigI2t1nc6jrzNuaYg5C4YF78PPFuQPzRiqn9ew==}
-    engines: {node: '>=4.0.0'}
-    dev: false
-
   /streamsearch@1.1.0:
     resolution: {integrity: sha512-Mcc5wHehp9aXz1ax6bZUyY5afg9u2rv5cqQI3mRrYkGC8rW2hM02jWuwjtL++LS5qinSyhj2QfLyNsuc+VsExg==}
     engines: {node: '>=10.0.0'}
@@ -7586,10 +7588,6 @@ packages:
       acorn: 8.8.2
       commander: 2.20.3
       source-map-support: 0.5.21
-    dev: false
-
-  /text-decoding@1.0.0:
-    resolution: {integrity: sha512-/0TJD42KDnVwKmDK6jj3xP7E2MG7SHAOG4tyTgyUCRPdHwvkquYNLEQltmdMa3owq3TkddCVcTsoctJI8VQNKA==}
     dev: false
 
   /text-table@0.2.0:

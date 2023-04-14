@@ -1,0 +1,20 @@
+{
+  "name": "web-recorder",
+  "version": "1.0.0",
+  "description": "",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "dev": "tsc --watch"
+  },
+  "author": "Martin Shameti",
+  "license": "ISC",
+  "dependencies": {
+    "react": "0.0.0-experimental-7b0642bb9-20230412",
+    "react-dom": "0.0.0-experimental-7b0642bb9-20230412"
+  },
+  "devDependencies": {
+    "typescript": "^4.9.5",
+    "assemblyscript": "^0.27.2"
+  }
+}
