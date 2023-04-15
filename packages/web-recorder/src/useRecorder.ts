@@ -18,7 +18,9 @@ export function useRecorder({
 
     if (!isProcessorImported && audioContext?.state === "running") {
       audioContext.audioWorklet
-        .addModule("./packages/web-recorder/dist/recording-processor.js")
+        .addModule(
+          "./packages/web-recorder/dist/audio-worklet/recording-processor.js"
+        )
         .then(() => setIsProcessorImported(true));
     }
   }, [audioContext?.state, isProcessorImported]);
@@ -72,11 +74,10 @@ export function useRecorder({
     navigator.mediaDevices
       .getUserMedia({
         audio: {
+          channelCount: 1,
           echoCancellation: false,
           autoGainControl: false,
           noiseSuppression: false,
-          // @ts-ignore: https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackConstraints
-          latency: 0,
         },
       })
       .then((mic) => setMicrophone(mic));

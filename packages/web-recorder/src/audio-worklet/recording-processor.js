@@ -56,8 +56,8 @@ class RecordingProcessor extends AudioWorkletProcessor {
               currentSample;
           }
 
-          // Pass data directly to output, unchanged.
-          outputs[input][channel][sample] = currentSample;
+          // Uncomment if you want to hear yourself
+          // outputs[input][channel][sample] = currentSample;
         }
       }
     }
@@ -81,6 +81,11 @@ class RecordingProcessor extends AudioWorkletProcessor {
         this.isRecording = false;
         this.port.postMessage({
           message: "MAX_RECORDING_LENGTH_REACHED",
+        });
+
+        this.port.postMessage({
+          message: "SHARE_RECORDING_BUFFER",
+          buffer: this._recordingBuffer,
         });
 
         return false;
