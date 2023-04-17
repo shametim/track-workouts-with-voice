@@ -49,7 +49,7 @@ export function createRecording({
         recordingBuffer.copyToChannel(event.data.buffer[i], i, 0);
       }
 
-      const wavUrl = createUrlFromAudioBuffer(recordingBuffer, true);
+      const wavUrl = createUrlFromAudioBuffer(recordingBuffer, false);
 
       onReceiveAudioUrl(wavUrl);
     }

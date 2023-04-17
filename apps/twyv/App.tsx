@@ -13,9 +13,9 @@ import { Platform } from "react-native";
 import "@expo/metro-runtime";
 import * as Font from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
-import { useRecorder } from "web-recorder";
-
+import { streamAudio } from "./streaming-http2";
 import "expo-dev-client";
+import { RecorderWeb } from "./Recorder.web";
 
 SplashScreen.preventAutoHideAsync();
 let didInit = false;
@@ -35,7 +35,7 @@ const AUDIO_CONFIGURATION: Audio.RecordingOptions = {
     sampleRate: 16000,
     numberOfChannels: 1,
   },
-  web: { bitsPerSecond: 6000, mimeType: "audio/webm" },
+  web: { bitsPerSecond: 16000, mimeType: "audio/webm" },
   isMeteringEnabled: true,
 };
 
@@ -54,12 +54,6 @@ export default function App() {
   const [splashAnimation] = useState(new Animated.Value(1));
   const [transcription, setTranscription] = useState(undefined);
 
-  const start = useRecorder({
-    onReceiveAudioUrl: (url) => {
-      fetch(url).then((e) => e);
-    },
-  });
-
   useEffect(() => {
     async function prepare() {
       try {
@@ -67,14 +61,14 @@ export default function App() {
           "Dinish-Regular": require("./assets/fonts/Dinish-Regular.ttf"),
         });
 
-        // await Audio.setAudioModeAsync({
-        //   allowsRecordingIOS: true,
-        //   playsInSilentModeIOS: true,
-        //   staysActiveInBackground: true,
-        // });
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: true,
+          playsInSilentModeIOS: true,
+          staysActiveInBackground: true,
+        });
 
-        // setPermission(await Audio.requestPermissionsAsync());
-
+        setPermission(await Audio.requestPermissionsAsync());
+        await streamAudio();
         // startRecording();
       } catch (e) {
         console.warn(e);
@@ -192,7 +186,7 @@ export default function App() {
         keyExtractor={(_, index) => index.toString()}
       />
 
-      <Button title="Record" onPress={start}></Button>
+      {Platform.OS === "web" && <RecorderWeb></RecorderWeb>}
 
       {permission?.status === Audio.PermissionStatus.DENIED && (
         <Text>You previously denied mic permission</Text>

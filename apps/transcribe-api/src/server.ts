@@ -6,7 +6,10 @@ import fastify, {
 import { fetch, HeadersInit } from "undici";
 import replyFrom from "@fastify/reply-from";
 import fs from "node:fs/promises";
+import fsSync from "node:fs";
 import * as ort from "onnxruntime-node";
+import cors from "@fastify/cors";
+import path from "node:path";
 
 async function detectVoice(audioFrame: Float32Array) {
   const vadModel = await fs.readFile("assets/silero_vad.onnx");
@@ -31,11 +34,31 @@ async function detectVoice(audioFrame: Float32Array) {
   return prediction;
 }
 
-const server: FastifyInstance = fastify({ logger: true });
+const server: FastifyInstance = fastify({
+  logger: true,
+  http2: true,
+  https: {
+    key: fsSync.readFileSync(path.join(__dirname, "..", "localhost+1-key.pem")),
+    cert: fsSync.readFileSync(path.join(__dirname, "..", "localhost+1.pem")),
+  },
+});
+
 server.addContentTypeParser("multipart/form-data", (req, body, done) => {
   done(null, body);
 });
 server.register(replyFrom);
+
+server.register(cors, (instance) => {
+  return (req: any, callback: any) => {
+    const corsOptions = {
+      // This is NOT recommended for production as it enables reflection exploits
+      origin: "http://localhost:19000",
+    };
+
+    // callback expects two parameters: error and options
+    callback(null, corsOptions);
+  };
+});
 
 server.post("/proxy", async (request, reply) => {
   await reply.from("https://api.openai.com/v1/audio/transcriptions", {
@@ -53,7 +76,9 @@ server.post(
       const headers: HeadersInit = {};
       headers["authorization"] = `Bearer ${process.env.OPENAI_API_KEY}`;
       headers["content-type"] = request.headers["content-type"]!;
-
+      request.raw.on("data", (chunk) => {
+        console.log(chunk);
+      });
       const transcription = await fetch(
         "https://api.openai.com/v1/audio/transcriptions",
         {

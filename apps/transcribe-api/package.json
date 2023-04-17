@@ -9,10 +9,11 @@
   "author": "Martin Shameti",
   "license": "ISC",
   "dependencies": {
-    "fastify": "^4.15.0",
-    "undici": "^5.21.2",
+    "@fastify/cors": "^8.2.1",
     "@fastify/reply-from": "^9.0.1",
-    "onnxruntime-node": "^1.14.0"
+    "fastify": "^4.15.0",
+    "onnxruntime-node": "^1.14.0",
+    "undici": "^5.21.2"
   },
   "devDependencies": {
     "@types/node": "^18.15.11",

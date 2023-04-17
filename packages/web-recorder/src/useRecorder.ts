@@ -10,6 +10,7 @@ export function useRecorder({
   const [isProcessorImported, setIsProcessorImported] = useState<boolean>();
   const [microphone, setMicrophone] = useState<MediaStream>();
   const [audioContext, setAudioContext] = useState<AudioContext>();
+  const constraints = navigator.mediaDevices.getSupportedConstraints();
 
   useEffect(() => {
     if (audioContext?.state === "suspended") {
@@ -70,14 +71,16 @@ export function useRecorder({
   // }, [isRecording]);
 
   return function startRecording() {
-    setAudioContext(new AudioContext());
+    setAudioContext(new AudioContext({ sampleRate: 16000 }));
+
     navigator.mediaDevices
       .getUserMedia({
         audio: {
-          channelCount: 1,
-          echoCancellation: false,
-          autoGainControl: false,
-          noiseSuppression: false,
+          channelCount: constraints.channelCount ? 1 : undefined,
+          echoCancellation: constraints.echoCancellation ? false : undefined,
+          autoGainControl: constraints.autoGainControl ? false : undefined,
+          noiseSuppression: constraints.noiseSuppression ? false : undefined,
+          sampleRate: constraints.sampleRate ? 16000 : undefined,
         },
       })
       .then((mic) => setMicrophone(mic));
