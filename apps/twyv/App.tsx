@@ -14,9 +14,11 @@ import "@expo/metro-runtime";
 import * as Font from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import { streamAudio } from "./streaming-http2";
-import "expo-dev-client";
 import { RecorderWeb } from "./Recorder.web";
+import { Asset } from "expo-asset";
+import * as FileSystem from "expo-file-system";
 
+import "expo-dev-client";
 SplashScreen.preventAutoHideAsync();
 let didInit = false;
 
@@ -46,7 +48,7 @@ interface Set {
 }
 export default function App() {
   // https://twitter.com/DavidKPiano/status/1604870393084665856/photo/2
-  const [isRecording, setIsRecording] = useState<boolean>(false);
+  const [isRecording, setIsRecording] = useState<boolean>(true);
 
   const [permission, setPermission] = useState<Audio.PermissionResponse>();
   const [exercises, setExercises] = useState([]);
@@ -60,16 +62,6 @@ export default function App() {
         await Font.loadAsync({
           "Dinish-Regular": require("./assets/fonts/Dinish-Regular.ttf"),
         });
-
-        await Audio.setAudioModeAsync({
-          allowsRecordingIOS: true,
-          playsInSilentModeIOS: true,
-          staysActiveInBackground: true,
-        });
-
-        setPermission(await Audio.requestPermissionsAsync());
-        await streamAudio();
-        // startRecording();
       } catch (e) {
         console.warn(e);
       } finally {
@@ -94,27 +86,69 @@ export default function App() {
     }
   }, [appIsReady]);
 
-  async function startRecording(previous?: Audio.Recording) {
-    if (previous) {
-      await previous.stopAndUnloadAsync();
-      uploadRecording(previous);
+  useEffect(() => {
+    async function record() {
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+        staysActiveInBackground: true,
+      });
 
-      if (!isRecording) {
-        return;
-      }
+      setPermission(await Audio.requestPermissionsAsync());
+      startRecording();
     }
 
-    const { recording, status } = await Audio.Recording.createAsync(
+    record();
+  }, []);
+
+  async function startRecording() {
+    let voiceDetected = undefined;
+
+    const { recording } = await Audio.Recording.createAsync(
       AUDIO_CONFIGURATION,
       (status) => {
         const loudness = status.metering;
+        if (loudness > -30) {
+          voiceDetected = true;
+        }
       },
       500
     );
 
-    await new Promise((resolve) => setTimeout(resolve, 5000));
+    // await new Promise((resolve) => setTimeout(resolve, 60000));
 
-    await startRecording(recording);
+    // await recording.stopAndUnloadAsync();
+
+    if (voiceDetected) {
+      // uploadRecording(recording);
+      // const result = await FileSystem.uploadAsync(
+      //   "https://twyv.martinshameti.com/transcribe",
+      //   recording.getURI(),
+      //   {
+      //     fieldName: "file",
+      //     httpMethod: "POST",
+      //     uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+      //   }
+      // );
+      const recordingBinaryLength = await FileSystem.getInfoAsync(
+        recording.getURI(),
+        { size: true }
+      );
+      console.log(recordingBinaryLength["size"]);
+      const recordingBinary = await FileSystem.readAsStringAsync(
+        recording.getURI(),
+        { encoding: "base64" }
+      );
+
+      // console.log(recordingBinary);
+      voiceDetected = false;
+    }
+
+    if (!isRecording) {
+      return;
+    }
+
+    // await startRecording();
   }
 
   async function uploadRecording(recording: Audio.Recording) {

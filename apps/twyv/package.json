@@ -8,6 +8,8 @@
   "dependencies": {
     "@expo/metro-runtime": "^1.1.0",
     "@expo/metro-config": "0.7.1",
+    "expo-asset": "^8.9.1",
+    "expo-file-system": "^15.2.2",
     "metro-config": "0.76.1",
     "expo": "~48.0.10",
     "expo-av": "^13.2.1",

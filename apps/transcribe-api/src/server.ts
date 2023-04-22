@@ -36,29 +36,29 @@ async function detectVoice(audioFrame: Float32Array) {
 
 const server: FastifyInstance = fastify({
   logger: true,
-  http2: true,
-  https: {
-    key: fsSync.readFileSync(path.join(__dirname, "..", "localhost+1-key.pem")),
-    cert: fsSync.readFileSync(path.join(__dirname, "..", "localhost+1.pem")),
-  },
+  // http2: true,
+  // https: {
+  //   key: fsSync.readFileSync(path.join(__dirname, "..", "localhost+1-key.pem")),
+  //   cert: fsSync.readFileSync(path.join(__dirname, "..", "localhost+1.pem")),
+  // },
 });
+
+// server.register(cors, (instance: any) => {
+//   return (req: any, callback: any) => {
+//     const corsOptions = {
+//       // This is NOT recommended for production as it enables reflection exploits
+//       origin: "http://localhost:19000",
+//     };
+
+//     // callback expects two parameters: error and options
+//     callback(null, corsOptions);
+//   };
+// });
 
 server.addContentTypeParser("multipart/form-data", (req, body, done) => {
   done(null, body);
 });
 server.register(replyFrom);
-
-server.register(cors, (instance) => {
-  return (req: any, callback: any) => {
-    const corsOptions = {
-      // This is NOT recommended for production as it enables reflection exploits
-      origin: "http://localhost:19000",
-    };
-
-    // callback expects two parameters: error and options
-    callback(null, corsOptions);
-  };
-});
 
 server.post("/proxy", async (request, reply) => {
   await reply.from("https://api.openai.com/v1/audio/transcriptions", {
