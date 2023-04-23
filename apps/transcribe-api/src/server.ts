@@ -8,8 +8,8 @@ import replyFrom from "@fastify/reply-from";
 import fs from "node:fs/promises";
 import fsSync from "node:fs";
 import * as ort from "onnxruntime-node";
-import cors from "@fastify/cors";
 import path from "node:path";
+import multipart from "@fastify/multipart";
 
 async function detectVoice(audioFrame: Float32Array) {
   const vadModel = await fs.readFile("assets/silero_vad.onnx");
@@ -35,30 +35,16 @@ async function detectVoice(audioFrame: Float32Array) {
 }
 
 const server: FastifyInstance = fastify({
-  logger: true,
-  // http2: true,
-  // https: {
-  //   key: fsSync.readFileSync(path.join(__dirname, "..", "localhost+1-key.pem")),
-  //   cert: fsSync.readFileSync(path.join(__dirname, "..", "localhost+1.pem")),
-  // },
+  logger: false,
 });
 
-// server.register(cors, (instance: any) => {
-//   return (req: any, callback: any) => {
-//     const corsOptions = {
-//       // This is NOT recommended for production as it enables reflection exploits
-//       origin: "http://localhost:19000",
-//     };
-
-//     // callback expects two parameters: error and options
-//     callback(null, corsOptions);
-//   };
+// server.addContentTypeParser("multipart/form-data", (req, body, done) => {
+//   done(null, body);
 // });
 
-server.addContentTypeParser("multipart/form-data", (req, body, done) => {
-  done(null, body);
-});
 server.register(replyFrom);
+
+server.register(multipart);
 
 server.post("/proxy", async (request, reply) => {
   await reply.from("https://api.openai.com/v1/audio/transcriptions", {
@@ -92,6 +78,42 @@ server.post(
       reply.send(response);
     } catch (error: any) {
       console.log(error);
+    }
+  }
+);
+
+server.post("/upload", async (request: FastifyRequest, reply: FastifyReply) => {
+  const data = await request.file();
+  if (!data) {
+    throw new Error("cant find data");
+  }
+  // data.file.
+  const fileContent = await data.toBuffer();
+  const fileName = `recording-${Date.now()}.bin`;
+  const filePath = path.join(__dirname, fileName);
+
+  try {
+    await fs.writeFile(filePath, fileContent, { encoding: "base64" });
+    reply.code(200).send({ message: "File uploaded successfully", fileName });
+  } catch (error) {
+    server.log.error(error);
+    reply.code(500).send({ message: "Failed to upload file", error });
+  }
+});
+
+server.post(
+  "/upload-binary-body",
+  async (request: FastifyRequest, reply: FastifyReply) => {
+    const data = request.body;
+    const fileName = `recording-${Date.now()}.bin`;
+    const filePath = path.join(__dirname, fileName);
+
+    try {
+      await fs.writeFile(filePath, data, { encoding: "base64" });
+      reply.code(200).send({ message: "File uploaded successfully", fileName });
+    } catch (error) {
+      server.log.error(error);
+      reply.code(500).send({ message: "Failed to upload file", error });
     }
   }
 );

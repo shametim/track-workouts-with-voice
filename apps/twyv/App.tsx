@@ -17,7 +17,8 @@ import { streamAudio } from "./streaming-http2";
 import { RecorderWeb } from "./Recorder.web";
 import { Asset } from "expo-asset";
 import * as FileSystem from "expo-file-system";
-
+import * as BackgroundFetch from "expo-background-fetch";
+import * as TaskManager from "expo-task-manager";
 import "expo-dev-client";
 SplashScreen.preventAutoHideAsync();
 let didInit = false;
@@ -46,6 +47,7 @@ interface Set {
   unit: string;
   reps: number;
 }
+
 export default function App() {
   // https://twitter.com/DavidKPiano/status/1604870393084665856/photo/2
   const [isRecording, setIsRecording] = useState<boolean>(true);
@@ -95,7 +97,15 @@ export default function App() {
       });
 
       setPermission(await Audio.requestPermissionsAsync());
-      startRecording();
+      const { recording } = await Audio.Recording.createAsync(
+        AUDIO_CONFIGURATION
+      );
+
+      try {
+        startRecordingWithFileStreaming(recording);
+      } catch (e) {
+        console.log(e.message);
+      }
     }
 
     record();
@@ -115,32 +125,11 @@ export default function App() {
       500
     );
 
-    // await new Promise((resolve) => setTimeout(resolve, 60000));
-
     // await recording.stopAndUnloadAsync();
 
     if (voiceDetected) {
       // uploadRecording(recording);
-      // const result = await FileSystem.uploadAsync(
-      //   "https://twyv.martinshameti.com/transcribe",
-      //   recording.getURI(),
-      //   {
-      //     fieldName: "file",
-      //     httpMethod: "POST",
-      //     uploadType: FileSystem.FileSystemUploadType.MULTIPART,
-      //   }
-      // );
-      const recordingBinaryLength = await FileSystem.getInfoAsync(
-        recording.getURI(),
-        { size: true }
-      );
-      console.log(recordingBinaryLength["size"]);
-      const recordingBinary = await FileSystem.readAsStringAsync(
-        recording.getURI(),
-        { encoding: "base64" }
-      );
 
-      // console.log(recordingBinary);
       voiceDetected = false;
     }
 
@@ -149,6 +138,44 @@ export default function App() {
     }
 
     // await startRecording();
+  }
+
+  async function startRecordingWithFileStreaming(recording: Audio.Recording) {
+    const status = await recording.getStatusAsync();
+    let position = 0;
+    let length = 0;
+
+    const audioFrameLength = 1000; // 1000 ms = 1 second
+
+    while (status.isRecording) {
+      const recordingMetadata = await FileSystem.getInfoAsync(
+        recording.getURI(),
+        { size: true }
+      );
+      const recordedBytesSoFar: number = recordingMetadata["size"];
+
+      const recordingBinary = await FileSystem.readAsStringAsync(
+        recording.getURI(),
+        { encoding: "base64", position, length: recordedBytesSoFar }
+      );
+      console.log(recordingBinary);
+      // const data = await uploadForNativeApps(recordingBinary);
+      await new Promise((resolve) => setTimeout(resolve, audioFrameLength));
+
+      position = recordedBytesSoFar;
+      length += recordedBytesSoFar;
+    }
+  }
+
+  function uploadForNativeApps(binary: string) {
+    // const formData = new FormData();
+    // const fileBlob = new Blob([binary], { type: "application/octet-stream" });
+    // formData.append("file", fileBlob, "recording.bin");
+
+    return fetch("https://twyv.martinshameti.com/upload-binary-body", {
+      method: "POST",
+      body: binary,
+    });
   }
 
   async function uploadRecording(recording: Audio.Recording) {
