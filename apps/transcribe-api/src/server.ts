@@ -104,7 +104,7 @@ server.post("/upload", async (request: FastifyRequest, reply: FastifyReply) => {
 server.post(
   "/upload-binary-body",
   async (request: FastifyRequest, reply: FastifyReply) => {
-    const data = request.body;
+    const data = request.body as string;
     const fileName = `recording-${Date.now()}.bin`;
     const filePath = path.join(__dirname, fileName);
 

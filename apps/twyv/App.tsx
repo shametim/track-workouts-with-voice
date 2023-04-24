@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   StyleSheet,
   Button,
@@ -15,10 +15,9 @@ import * as Font from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import { streamAudio } from "./streaming-http2";
 import { RecorderWeb } from "./Recorder.web";
-import { Asset } from "expo-asset";
 import * as FileSystem from "expo-file-system";
-import * as BackgroundFetch from "expo-background-fetch";
-import * as TaskManager from "expo-task-manager";
+
+import { AppState } from "react-native";
 import "expo-dev-client";
 SplashScreen.preventAutoHideAsync();
 let didInit = false;
@@ -49,7 +48,6 @@ interface Set {
 }
 
 export default function App() {
-  // https://twitter.com/DavidKPiano/status/1604870393084665856/photo/2
   const [isRecording, setIsRecording] = useState<boolean>(true);
 
   const [permission, setPermission] = useState<Audio.PermissionResponse>();
@@ -57,6 +55,18 @@ export default function App() {
   const [appIsReady, setAppIsReady] = useState(false);
   const [splashAnimation] = useState(new Animated.Value(1));
   const [transcription, setTranscription] = useState(undefined);
+  const recordingUri = useRef<string>();
+  const appState = useRef(AppState.currentState);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (nextAppState) => {
+      appState.current = nextAppState;
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
 
   useEffect(() => {
     async function prepare() {
@@ -77,7 +87,7 @@ export default function App() {
     }
   }, []);
 
-  const onLayoutRootView = useCallback(async () => {
+  const onLayoutRootView = async () => {
     if (appIsReady) {
       await SplashScreen.hideAsync();
       Animated.timing(splashAnimation, {
@@ -86,7 +96,7 @@ export default function App() {
         useNativeDriver: false,
       }).start();
     }
-  }, [appIsReady]);
+  };
 
   useEffect(() => {
     async function record() {
@@ -98,11 +108,15 @@ export default function App() {
 
       setPermission(await Audio.requestPermissionsAsync());
       const { recording } = await Audio.Recording.createAsync(
-        AUDIO_CONFIGURATION
+        AUDIO_CONFIGURATION,
+        onRecording,
+        1000
       );
-
+      recordingUri.current = recording.getURI();
       try {
-        startRecordingWithFileStreaming(recording);
+        if (Platform.OS === "ios" || Platform.OS === "android") {
+          // startRecordingWithFileStreaming(recording);
+        }
       } catch (e) {
         console.log(e.message);
       }
@@ -139,6 +153,29 @@ export default function App() {
 
     // await startRecording();
   }
+  async function onRecording(status: Audio.RecordingStatus) {
+    let position = 0;
+    let length = 0;
+    const audioFrameLength = 1000; // 1000 ms = 1 second
+    if (status.isRecording && Platform.OS === "ios" && recordingUri.current) {
+      const recordingMetadata = await FileSystem.getInfoAsync(
+        recordingUri.current,
+        {
+          size: true,
+        }
+      );
+      const recordedBytesSoFar: number = recordingMetadata["size"];
+      // const recordingBinary = await FileSystem.readAsStringAsync(
+      //   recordingUri.current,
+      //   {
+      //     encoding: "base64",
+      //     position,
+      //     length: recordedBytesSoFar,
+      //   }
+      // );
+      console.log(recordedBytesSoFar);
+    }
+  }
 
   async function startRecordingWithFileStreaming(recording: Audio.Recording) {
     const status = await recording.getStatusAsync();
@@ -158,7 +195,7 @@ export default function App() {
         recording.getURI(),
         { encoding: "base64", position, length: recordedBytesSoFar }
       );
-      console.log(recordingBinary);
+
       // const data = await uploadForNativeApps(recordingBinary);
       await new Promise((resolve) => setTimeout(resolve, audioFrameLength));
 
