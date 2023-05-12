@@ -57,7 +57,7 @@ export default function App() {
   const [transcription, setTranscription] = useState(undefined);
   const recordingUri = useRef<string>();
   const appState = useRef(AppState.currentState);
-
+  const position = useRef(0);
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (nextAppState) => {
       appState.current = nextAppState;
@@ -107,12 +107,15 @@ export default function App() {
       });
 
       setPermission(await Audio.requestPermissionsAsync());
+
       const { recording } = await Audio.Recording.createAsync(
         AUDIO_CONFIGURATION,
         onRecording,
         1000
       );
+
       recordingUri.current = recording.getURI();
+
       try {
         if (Platform.OS === "ios" || Platform.OS === "android") {
           // startRecordingWithFileStreaming(recording);
@@ -153,27 +156,33 @@ export default function App() {
 
     // await startRecording();
   }
+
   async function onRecording(status: Audio.RecordingStatus) {
-    let position = 0;
-    let length = 0;
-    const audioFrameLength = 1000; // 1000 ms = 1 second
     if (status.isRecording && Platform.OS === "ios" && recordingUri.current) {
-      const recordingMetadata = await FileSystem.getInfoAsync(
-        recordingUri.current,
-        {
-          size: true,
-        }
+      const meta = await FileSystem.getInfoAsync(recordingUri.current, {
+        size: true,
+      });
+      console.log(
+        "current: ",
+        position.current,
+        "  size: ",
+        meta["size"],
+        " diff: ",
+        meta["size"] - position.current
       );
-      const recordedBytesSoFar: number = recordingMetadata["size"];
-      // const recordingBinary = await FileSystem.readAsStringAsync(
-      //   recordingUri.current,
-      //   {
-      //     encoding: "base64",
-      //     position,
-      //     length: recordedBytesSoFar,
-      //   }
-      // );
-      console.log(recordedBytesSoFar);
+      if (position.current === meta["size"]) {
+      } else {
+        const content = await FileSystem.readAsStringAsync(
+          recordingUri.current,
+          {
+            encoding: "base64",
+            position: position.current,
+            length: meta["size"],
+          }
+        );
+        position.current = meta["size"];
+        console.log(content.length);
+      }
     }
   }
 
@@ -216,8 +225,8 @@ export default function App() {
   }
 
   async function uploadRecording(recording: Audio.Recording) {
-    const uri = recording.getURI();
-    // const uri = "assets/Recording.m4a" // test with premade recording
+    // const uri = recording.getURI();
+    const uri = "assets/Recording.m4a"; // test with premade recording
     if (typeof uri === "string") {
       const formData = new FormData();
 

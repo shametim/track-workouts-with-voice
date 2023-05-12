@@ -9,5 +9,5 @@ export function RecorderWeb(props) {
       fetch(url).then((e) => e);
     },
   });
-  return <Button title="Record" onPress={start}></Button>;
+  return <Button title="Recorrrd" onPress={start}></Button>;
 }
