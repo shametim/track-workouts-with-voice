@@ -35,7 +35,7 @@ async function detectVoice(audioFrame: Float32Array) {
 }
 
 const server: FastifyInstance = fastify({
-  logger: false,
+  logger: true,
 });
 
 // server.addContentTypeParser("multipart/form-data", (req, body, done) => {
@@ -104,16 +104,28 @@ server.post("/upload", async (request: FastifyRequest, reply: FastifyReply) => {
 server.post(
   "/upload-binary-body",
   async (request: FastifyRequest, reply: FastifyReply) => {
-    const data = request.body as string;
-    const fileName = `recording-${Date.now()}.bin`;
-    const filePath = path.join(__dirname, fileName);
+    const headers: HeadersInit = {};
+    headers["authorization"] = `Bearer ${process.env.OPENAI_API_KEY}`;
+    headers["content-type"] = request.headers["content-type"]!;
 
     try {
-      await fs.writeFile(filePath, data, { encoding: "base64" });
-      reply.code(200).send({ message: "File uploaded successfully", fileName });
+      request.raw.on("data", (chunk) => {
+        console.log(chunk);
+      });
+      const transcription = await fetch(
+        "https://api.openai.com/v1/audio/transcriptions",
+        {
+          method: "POST",
+          headers,
+          body: request.body as Buffer,
+          duplex: "half",
+        }
+      );
+      const response = (await transcription.json()) as any;
+      reply.send(response);
     } catch (error) {
       server.log.error(error);
-      reply.code(500).send({ message: "Failed to upload file", error });
+      reply.code(500).send({ message: "Failed to transcribe audio", error });
     }
   }
 );

@@ -118,7 +118,7 @@ export default function App() {
 
       try {
         if (Platform.OS === "ios" || Platform.OS === "android") {
-          // startRecordingWithFileStreaming(recording);
+          startRecordingWithFileStreaming(recording);
         }
       } catch (e) {
         console.log(e.message);
@@ -142,10 +142,10 @@ export default function App() {
       500
     );
 
-    // await recording.stopAndUnloadAsync();
+    await recording.stopAndUnloadAsync();
 
     if (voiceDetected) {
-      // uploadRecording(recording);
+      uploadRecording(recording);
 
       voiceDetected = false;
     }
@@ -154,11 +154,15 @@ export default function App() {
       return;
     }
 
-    // await startRecording();
+    await startRecording();
   }
 
   async function onRecording(status: Audio.RecordingStatus) {
-    if (status.isRecording && Platform.OS === "ios" && recordingUri.current) {
+    if (
+      status.isRecording &&
+      Platform.OS === "android" &&
+      recordingUri.current
+    ) {
       const meta = await FileSystem.getInfoAsync(recordingUri.current, {
         size: true,
       });
@@ -205,7 +209,7 @@ export default function App() {
         { encoding: "base64", position, length: recordedBytesSoFar }
       );
 
-      // const data = await uploadForNativeApps(recordingBinary);
+      const data = await uploadForNativeApps(recordingBinary);
       await new Promise((resolve) => setTimeout(resolve, audioFrameLength));
 
       position = recordedBytesSoFar;
@@ -217,7 +221,6 @@ export default function App() {
     // const formData = new FormData();
     // const fileBlob = new Blob([binary], { type: "application/octet-stream" });
     // formData.append("file", fileBlob, "recording.bin");
-
     return fetch("https://twyv.martinshameti.com/upload-binary-body", {
       method: "POST",
       body: binary,
