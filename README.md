@@ -1,3 +1,4 @@
+
 # Track Workouts with Voice
 
 This project allows users to track their workouts using voice commands. It uses advanced voice recognition and machine learning algorithms to accurately track and record workout data.
@@ -9,9 +10,8 @@ This project allows users to track their workouts using voice commands. It uses 
 3. Navigate to the project directory and install dependencies using `npm install`.
 
 ## Usage Guide
-
+To run the project, use the command `npm run dev`. This will start the server and the application will be accessible at `localhost:5000`.
 To run the project, use the command `npm start`. This will start the server and the application will be accessible at `localhost:5000`.
 
 To track a workout, simply start the application and speak your workout details into the microphone. The application will recognize your voice commands and record your workout data accordingly.
-
 
